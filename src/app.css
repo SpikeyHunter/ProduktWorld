@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand palette — extracted from the Produktworld flyers */
+  --color-beige:       #E7DFC8; /* logo cream / primary text       */
+  --color-darkred:     #5C140C; /* deep oxblood / panels, gradients */
+  --color-lightred:    #D6261C; /* circus neon red / accents, CTAs  */
+  --color-darkaccent:  #0D0706; /* near-black / page base           */
+  --color-lightaccent: #E89A3C; /* amber spotlight glow / highlights*/
+
+  --font-display: "Fraunces", Georgia, serif;     /* swap for your custom face */
+  --font-body:    "Archivo", system-ui, sans-serif;
+}
+
+/* Bare-name aliases so var(--beige) works too, exactly as you wanted */
+:root {
+  --beige: var(--color-beige);
+  --darkred: var(--color-darkred);
+  --lightred: var(--color-lightred);
+  --darkaccent: var(--color-darkaccent);
+  --lightaccent: var(--color-lightaccent);
+  --neon-red: #FA0401;   /* bonus glow */
+  --neon-amber: #FBA901; /* bonus glow */
+}
+
+html, body {
+  background: var(--color-darkaccent);
+  color: var(--color-beige);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Lenis smooth-scroll styles (inlined so there's no extra import to break) */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: clip; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
