@@ -1,9 +1,11 @@
 import { gsap } from 'gsap';
-import { ScrollTrigger }    from 'gsap/ScrollTrigger';
-import { SplitText }        from 'gsap/SplitText';
-import { DrawSVGPlugin }    from 'gsap/DrawSVGPlugin';
-import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { browser } from '$app/environment';
+
+// Import premium plugins from your local folder instead of the public NPM registry
+import { SplitText } from './gsap-bonus/SplitText.js';
+import { DrawSVGPlugin } from './gsap-bonus/DrawSVGPlugin.js';
+import { ScrambleTextPlugin } from './gsap-bonus/ScrambleTextPlugin.js';
 
 if (browser) {
   gsap.registerPlugin(ScrollTrigger, SplitText, DrawSVGPlugin, ScrambleTextPlugin);
