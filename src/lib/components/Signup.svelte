@@ -1,25 +1,36 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { gsap } from '$lib/gsap';
+  import { onMount } from 'svelte';
   
-    let pin: HTMLDivElement, word: HTMLHeadingElement, wipe: HTMLDivElement, cta: HTMLDivElement;
-  
-    onMount(() => {
+  let pin: HTMLDivElement, word: HTMLHeadingElement, wipe: HTMLDivElement, cta: HTMLDivElement;
+
+  onMount(() => {
+    let trigger: any;
+    
+    (async () => {
+      const { gsap } = await import('$lib/gsap');
+      
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         gsap.set(wipe, { scaleY: 1 }); gsap.set(word, { autoAlpha: 0 }); gsap.set(cta, { autoAlpha: 1 });
         return;
       }
+      
       const tl = gsap.timeline({
         scrollTrigger: { trigger: pin, start: 'top top', end: '+=140%', scrub: true, pin: true }
       });
+      
+      // Store reference to kill it on unmount
+      trigger = tl.scrollTrigger;
+      
       tl.to(word, { scale: 1.6, ease: 'none' })
         .to(wipe, { scaleY: 1, ease: 'power2.inOut' }, 0.15)
-        .to(word, { color: '#0D0706', duration: 0.2 }, 0.32)   // word flips dark as red floods in
+        .to(word, { color: '#0D0706', duration: 0.2 }, 0.32)
         .to(word, { autoAlpha: 0, scale: 2.1, ease: 'power2.in' }, 0.55)
         .to(cta,  { autoAlpha: 1, ease: 'power2.out' }, 0.6);
-      return () => tl.scrollTrigger?.kill();
-    });
-  </script>
+    })();
+    
+    return () => trigger?.kill();
+  });
+</script>
   
   <section id="signup">
     <div bind:this={pin} class="relative h-[100svh] overflow-hidden flex items-center justify-center">

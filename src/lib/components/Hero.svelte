@@ -1,23 +1,27 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { gsap, ScrollTrigger } from '$lib/gsap';
-    import { introComplete } from '$lib/intro';
-    import logo from '$lib/assets/PW_Logo.png';
-  
-    const COUNT = 48;
-    const bulbs = Array.from({ length: COUNT }, (_, i) => i);
-  
-    let section = $state<HTMLElement>();
-    let logoEl  = $state<HTMLImageElement>();
-    let meta    = $state<HTMLDivElement>();
-    let glow    = $state<HTMLDivElement>();
-  
-    onMount(() => {
-      // Hidden during preloader; hero is invisible until introComplete fires
+  import { onMount } from 'svelte';
+  import { introComplete } from '$lib/intro';
+  import logo from '$lib/assets/PW_Logo.png';
+
+  const COUNT = 48;
+  const bulbs = Array.from({ length: COUNT }, (_, i) => i);
+
+  let section = $state<HTMLElement>();
+  let logoEl  = $state<HTMLImageElement>();
+  let meta    = $state<HTMLDivElement>();
+  let glow    = $state<HTMLDivElement>();
+
+  onMount(() => {
+    let unsub = () => {};
+    
+    (async () => {
+      // Dynamic import protects the server
+      const { gsap, ScrollTrigger } = await import('$lib/gsap');
+      
       gsap.set(logoEl!, { autoAlpha: 0 });
       gsap.set(Array.from(meta!.children), { y: 18, autoAlpha: 0 });
-  
-      const unsub = introComplete.subscribe((v) => {
+
+      unsub = introComplete.subscribe((v) => {
         if (!v) return;
   
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -26,8 +30,6 @@
           return;
         }
   
-        // Logo fades in at the exact same position the preloader logo was
-        // (both are centered with identical width — see comment in CSS below)
         gsap.timeline({ delay: 0.25 })
           .to(logoEl!, { autoAlpha: 1, duration: 0.9, ease: 'power2.out' })
           .to(Array.from(meta!.children), {
@@ -36,15 +38,15 @@
             ease: 'power3.out'
           }, '-=0.35');
   
-        // Scroll parallax
         const st = { trigger: section!, start: 'top top', end: 'bottom top', scrub: true };
         gsap.to(glow!,   { yPercent: 35, ease: 'none', scrollTrigger: st });
         gsap.to(logoEl!, { yPercent: -9, ease: 'none', scrollTrigger: st });
       });
-  
-      return () => unsub();
-    });
-  </script>
+    })();
+    
+    return () => unsub();
+  });
+</script>
   
   <section bind:this={section} id="top"
     class="relative min-h-[100svh] overflow-hidden">
