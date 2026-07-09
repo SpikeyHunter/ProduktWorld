@@ -78,14 +78,17 @@
 		<h1 class="font-black text-beige leading-none" style="font-size: clamp(2rem, 7vw, 4rem);">
 			Rejoignez le Cirque
 		</h1>
-		<p class="max-w-2xl text-beige/85 text-[10px] sm:text-sm 2xl:text-base tracking-[0.05em] sm:tracking-[0.22em] flex flex-nowrap items-center justify-center gap-x-1.5 sm:gap-x-3 whitespace-nowrap overflow-x-auto px-2">
-      {#each words as word, i}
-        <span>{word}</span>
-        {#if i < words.length - 1}
-          <img src={star} alt="" class="w-2 h-2 sm:w-4 sm:h-4 md:w-5 md:h-5 opacity-80 shrink-0" />
-        {/if}
-      {/each}
-    </p>
+		<p
+			class="w-full text-beige/85 flex flex-nowrap items-center justify-center gap-x-1 sm:gap-x-3 whitespace-nowrap px-2"
+			style="font-size: clamp(6px, 2.6vw, 15px); letter-spacing: 0.03em;"
+		>
+			{#each words as word, i}
+				<span>{word}</span>
+				{#if i < words.length - 1}
+					<img src={star} alt="" class="w-[0.6em] h-[0.6em] opacity-80 shrink-0" />
+				{/if}
+			{/each}
+		</p>
 
 		<div class="w-full max-w-[400px] mt-2 relative min-h-[60px] flex justify-center items-center">
 			<button
