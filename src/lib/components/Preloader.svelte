@@ -53,8 +53,21 @@
 
 	onMount(() => {
 		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			// Respect reduced motion (skip the vortex entirely — no spin, no
+			// scale, no lift), but avoid an instant hard cut. A plain opacity
+			// fade isn't the kind of motion this setting is meant to suppress
+			// (it's not a transform/parallax/spin), and it reads as an
+			// intentional transition rather than a flash/glitch.
 			introComplete.set(true);
-			done = true;
+			if (root) {
+				root.style.transition = 'opacity 300ms ease-out';
+				root.style.opacity = '0';
+				setTimeout(() => {
+					done = true;
+				}, 300);
+			} else {
+				done = true;
+			}
 			return;
 		}
 
@@ -265,6 +278,21 @@
 {/if}
 
 <style>
+	/*
+	  ⚠ IMPORTANT — initial hidden states live HERE, in CSS, not in the
+	  gsap.set() calls in <script>.
+
+	  The markup paints as soon as the component mounts, but the gsap.set()
+	  calls can't run until `await import('$lib/gsap')` resolves (a network
+	  round-trip). In that gap the browser was painting the iris full-screen —
+	  background image at full opacity, logo off-center (because the -50%/-50%
+	  centering also comes from gsap) — which is the flash you see on reload.
+
+	  CSS ships with the document, so these rules apply on the very first
+	  paint. The gsap.set() calls remain as-is and simply re-assert the same
+	  values once gsap loads; they're the source of truth for the animation,
+	  these are the source of truth for frame zero. Keep the two in sync.
+	*/
 	.intro {
 		position: fixed;
 		inset: 0;
@@ -300,6 +328,10 @@
 		will-change: transform, opacity;
 		transform: translateZ(0);
 		backface-visibility: hidden;
+
+		/* ⚠ Initial state in CSS, not gsap — see note at top of <style>. */
+		opacity: 0;
+		visibility: hidden;
 	}
 
 	/* ── iris ── */
@@ -310,6 +342,10 @@
 		inset: 0;
 		z-index: 2;
 		will-change: clip-path;
+
+		/* ⚠ Closed until the timeline opens it. Without this, the iris paints
+		   full-screen (bg image + logo) during the `await import('$lib/gsap')`. */
+		clip-path: circle(0px at 50% 50%);
 	}
 	/* Pure black backdrop — the logo reveals on plain black, no glow */
 	.iris-bg-black {
@@ -325,6 +361,10 @@
 	.iris-bg-img-wrap {
 		position: absolute;
 		inset: 0;
+
+		/* ⚠ Initial state in CSS, not gsap. */
+		opacity: 0;
+		visibility: hidden;
 	}
 	.iris-bg-img {
 		position: absolute;
@@ -351,5 +391,12 @@
 		width: min(58vw, 480px);
 		z-index: 2;
 		will-change: transform, opacity;
+
+		/* ⚠ Mirrors gsap's { xPercent: -50, yPercent: -50, scale: 0.92,
+		   autoAlpha: 0 }. Without this the logo paints off-center at full
+		   opacity before gsap loads — that was the visible flash. */
+		transform: translate(-50%, -50%) scale(0.92);
+		opacity: 0;
+		visibility: hidden;
 	}
 </style>

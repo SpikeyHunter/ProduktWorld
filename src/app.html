@@ -12,7 +12,22 @@
     <link rel="manifest" href="/site.webmanifest?v=2">
     
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
+
+    <!--
+      Critical, render-blocking CSS — inlined directly in the HTML so it
+      paints before any external stylesheet or JS bundle loads. This is
+      what prevents a flash of the page's background image before the
+      Preloader's own CSS (position: fixed; z-index: 60) has applied.
+      Keep this hex in sync with --color-darkaccent.
+    -->
+    <style>
+      html,
+      body {
+        background: #0d0706;
+        margin: 0;
+      }
+    </style>
+
     %sveltekit.head%
 	</head>
 

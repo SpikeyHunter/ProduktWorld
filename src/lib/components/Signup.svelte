@@ -24,8 +24,12 @@
 				if (!v) return;
 
 				if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-					gsap.set(logoEl!, { autoAlpha: 1 });
-					gsap.set(items, { y: 0, autoAlpha: 1 });
+					// Snap the position instantly (no animated movement — that's
+					// the part reduced motion actually cares about), but let
+					// opacity fade in gently so content doesn't just pop in.
+					gsap.set(items, { y: 0 });
+					gsap.to(logoEl!, { autoAlpha: 1, duration: 0.4, ease: 'power1.out' });
+					gsap.to(items, { autoAlpha: 1, duration: 0.4, ease: 'power1.out' });
 					return;
 				}
 
