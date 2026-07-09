@@ -8,7 +8,7 @@
 	<title>Produktworld — Festival Musique + Arts</title>
 	<meta
 		name="description"
-		content="Produktworld · 5–7 septembre 2026 · New City Gas, Montréal."
+		content="Produktworld · 4–6 septembre 2026 · New City Gas, Montréal."
 	/>
 </svelte:head>
 
