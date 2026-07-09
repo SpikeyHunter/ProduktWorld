@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Produktworld — Festival Musique + Arts</title>
+	<title>Produktworld</title>
 	<meta
 		name="description"
 		content="Produktworld · 4–6 septembre 2026 · New City Gas, Montréal."
