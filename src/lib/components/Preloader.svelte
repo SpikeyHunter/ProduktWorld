@@ -124,14 +124,10 @@
 			tl
 				// ── PHASE 1 — blades appear: two opposite blades at a time,
 				//              sweeping clockwise, quick ──────────────────────────
-				.to(
+				.set(
 					bladeEls,
 					{
 						autoAlpha: 1,
-						duration: 0.45,
-						ease: 'power2.out',
-						// pair i with its opposite (i + HALF): both fade in together,
-						// pairs advance clockwise around the wheel
 						stagger: (i: number) => (i % HALF) * 0.055
 					},
 					0.15
