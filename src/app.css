@@ -1,37 +1,54 @@
 @import "tailwindcss";
 
-@theme {
-  /* Brand palette — extracted from the Produktworld flyers */
-  --color-beige:       #E7DFC8; /* logo cream / primary text       */
-  --color-darkred:     #5C140C; /* deep oxblood / panels, gradients */
-  --color-lightred:    #D6261C; /* circus neon red / accents, CTAs  */
-  --color-darkaccent:  #0D0706; /* near-black / page base           */
-  --color-lightaccent: #E89A3C; /* amber spotlight glow / highlights*/
-
-  --font-display: "Fraunces", Georgia, serif;     /* swap for your custom face */
-  --font-body:    "Archivo", system-ui, sans-serif;
+/*
+  ── Williesh — brand typeface ─────────────────────────────────────────────
+*/
+@font-face {
+  font-family: "Williesh";
+  src:
+    url("/fonts/Williesh.woff2") format("woff2"),
+    url("/fonts/Williesh.woff") format("woff");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
 }
 
-/* Bare-name aliases so var(--beige) works too, exactly as you wanted */
+@theme {
+  /* Brand palette */
+  --color-beige:       #E4DDC6;
+  --color-darkred:     #5C140C;
+  --color-lightred:    #CE152C;
+  --color-darkaccent:  #0D0706;
+  --color-lightaccent: #E5A561;
+
+  /* FIX: Overriding standard Tailwind font variables ensures 
+    Williesh is applied globally across all elements.
+  */
+  --font-sans:    "Williesh", system-ui, sans-serif;
+  --font-serif:   "Williesh", Georgia, serif;
+  --font-display: "Williesh", Georgia, serif;
+  --font-body:    "Williesh", system-ui, sans-serif;
+}
+
 :root {
   --beige: var(--color-beige);
   --darkred: var(--color-darkred);
   --lightred: var(--color-lightred);
   --darkaccent: var(--color-darkaccent);
   --lightaccent: var(--color-lightaccent);
-  --neon-red: #FA0401;   /* bonus glow */
-  --neon-amber: #FBA901; /* bonus glow */
+  --neon-red: #FA0401;   
+  --neon-amber: #FBA901; 
 }
 
 html, body {
   background: var(--color-darkaccent);
   color: var(--color-beige);
-  font-family: var(--font-body);
+  font-family: var(--font-sans); /* Applied explicitly to the body */
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Lenis smooth-scroll styles (inlined so there's no extra import to break) */
+/* Lenis smooth-scroll styles */
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }

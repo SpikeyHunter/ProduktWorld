@@ -2,74 +2,53 @@
 	import { onMount } from 'svelte';
 	import { introComplete } from '$lib/intro';
 	import logo from '$lib/assets/PW_Logo.png';
-	import logoSvgRaw from '$lib/assets/PW_Logo.svg?raw';
+	import bg from '$lib/assets/BG_PW.jpg';
 
-	// ─── star paths ────────────────────────────────────────────────────────────
-	// Produces an 8-point star centered at (0,0)
-	function makeStar(rNS: number, rEW: number, rDiag: number, rInner: number): string {
-		const tipR = [rNS, rDiag, rEW, rDiag, rNS, rDiag, rEW, rDiag];
+	// ─── hypnotic vortex geometry ──────────────────────────────────────────────
+	// Curved swirl blades: gentle curl at the rim, tight twist at the center.
+	// R_OUT is oversized so the stripes ALWAYS extend beyond the window —
+	// no visible rim on any screen or aspect ratio.
+	const N_BLADES = 18;
+	const CX = 500,
+		CY = 500;
+	const R_OUT = 1600; // > max half-diagonal of the sliced viewBox on any screen
+	const TWIST = 2.35; // total swirl (radians) from rim to center
+	const TWIST_POW = 1.7; // >1 → twist accelerates near the center
+	const SAMPLES = 44; // high sample count → visually smooth curved edges
+
+	function bladePath(i: number): string {
+		const base = (i / N_BLADES) * Math.PI * 2;
+		const width = Math.PI / N_BLADES; // blade fills half the pitch → equal gaps
 		const pts: string[] = [];
-		for (let k = 0; k < 16; k++) {
-			const r = k % 2 === 0 ? tipR[k / 2] : rInner;
-			const a = (-90 + k * 22.5) * (Math.PI / 180);
-			pts.push(`${(r * Math.cos(a)).toFixed(2)},${(r * Math.sin(a)).toFixed(2)}`);
+		const ang = (t: number, off: number) => base + off + TWIST * Math.pow(1 - t, TWIST_POW);
+		// outer rim → center along leading edge
+		for (let s = 0; s <= SAMPLES; s++) {
+			const t = 1 - (s / SAMPLES) * 0.995; // radius fraction 1 → ~0.005
+			const a = ang(t, 0);
+			pts.push(
+				`${(CX + R_OUT * t * Math.cos(a)).toFixed(2)},${(CY + R_OUT * t * Math.sin(a)).toFixed(2)}`
+			);
+		}
+		// center → outer rim along trailing edge
+		for (let s = SAMPLES; s >= 0; s--) {
+			const t = 1 - (s / SAMPLES) * 0.995;
+			const a = ang(t, width);
+			pts.push(
+				`${(CX + R_OUT * t * Math.cos(a)).toFixed(2)},${(CY + R_OUT * t * Math.sin(a)).toFixed(2)}`
+			);
 		}
 		return 'M' + pts.join(' L') + ' Z';
 	}
 
-	// Center star: lives in a -100→100 viewBox (centered at 0,0)
-	const CENTER_STAR = makeStar(88, 52, 31, 10);
-	// Mini star for the orbit ring; translated to its orbit position in SVG
-	const MINI_STAR = makeStar(13, 8, 5, 2);
-
-	// ─── spinning big-top stripes ───────────────────────────────────────────────
-	const STRIPES = 24,
-		CX = 500,
-		CY = 500,
-		R = 1000;
-	const wedges = Array.from({ length: STRIPES }, (_, i) => {
-		const a0 = (i / STRIPES) * Math.PI * 2;
-		const a1 = ((i + 1) / STRIPES) * Math.PI * 2;
-		return {
-			d:
-				`M${CX},${CY} ` +
-				`L${(CX + R * Math.cos(a0)).toFixed(1)},${(CY + R * Math.sin(a0)).toFixed(1)} ` +
-				`L${(CX + R * Math.cos(a1)).toFixed(1)},${(CY + R * Math.sin(a1)).toFixed(1)} Z`,
-			red: i % 2 === 0
-		};
-	});
-
-	// ─── orbit ring (8 mini stars) ─────────────────────────────────────────────
-	const N_ORBIT = 8,
-		ORBIT_R = 155;
-	// SVG units, viewBox 0–1000, center 500,500
-	const orbitItems = Array.from({ length: N_ORBIT }, (_, i) => {
-		const a = (i / N_ORBIT) * Math.PI * 2 - Math.PI / 2;
-		return { x: 500 + ORBIT_R * Math.cos(a), y: 500 + ORBIT_R * Math.sin(a) };
-	});
-
-	// ─── scatter particles ─────────────────────────────────────────────────────
-	const N_PART = 14;
-	const particleList = Array.from({ length: N_PART }, (_, i) => ({
-		angle: (i / N_PART) * Math.PI * 2,
-		r: [3, 2, 4, 2, 5, 3, 2, 4, 3, 2, 4, 5, 3, 2][i],
-		fill: ['var(--color-lightaccent)', 'var(--color-lightred)', 'var(--color-beige)'][i % 3]
-	}));
+	const blades = Array.from({ length: N_BLADES }, (_, i) => bladePath(i));
+	const HALF = N_BLADES / 2;
 
 	// ─── refs ──────────────────────────────────────────────────────────────────
 	let root = $state<HTMLDivElement>();
-	let stripesG = $state<SVGGElement>();
-	let orbitContainerEl = $state<SVGGElement>();
-	let haloEl = $state<SVGCircleElement>();
-	let halo2El = $state<SVGCircleElement>();
-	let particlesG = $state<SVGGElement>();
-	let vigEl = $state<HTMLDivElement>();
+	let vortexG = $state<SVGGElement>();
 	let irisEl = $state<HTMLDivElement>();
-	let logoSvgWrap = $state<HTMLDivElement>();
+	let irisBgImgEl = $state<HTMLDivElement>();
 	let logoEl = $state<HTMLImageElement>();
-	let starOverlayEl = $state<HTMLDivElement>();
-	let starFillEl = $state<SVGPathElement>();
-	let starStrokeEl = $state<SVGPathElement>();
 	let done = $state(false);
 
 	onMount(() => {
@@ -80,7 +59,7 @@
 		}
 
 		// ── scroll lock (iOS-compatible fixed-position technique) ─────────────────
-		const savedScrollY = window.scrollY;
+		const savedScrollY = 0; // always land at the top after the intro, not wherever it was before reload
 		document.body.style.position = 'fixed';
 		document.body.style.top = `-${savedScrollY}px`;
 		document.body.style.width = '100%';
@@ -94,180 +73,149 @@
 			window.scrollTo(0, savedScrollY);
 		}
 
-		// ── iris geometry ─────────────────────────────────────────────────────────
-		const W = window.innerWidth,
-			H = window.innerHeight;
-		const LOGO_RATIO = 6.73;
-		const logoW = Math.min(W * 0.58, 480);
-		const logoH = logoW / LOGO_RATIO;
-		const logoDiag = Math.sqrt((logoW / 2) ** 2 + (logoH / 2) ** 2);
-		const openR = Math.max(Math.min(W, H) * 0.4, logoDiag * 1.35);
-		const fullR = Math.ceil(Math.sqrt(W * W + H * H)) + 20;
+		// Preload the background image so the crossfade is instant
+		const preImg = new Image();
+		preImg.src = bg;
 
-		// ── collect DOM collections ───────────────────────────────────────────────
-		const wedgeEls = Array.from(stripesG!.querySelectorAll<SVGPathElement>('.wedge'));
-		const orbitStarEls = Array.from(orbitContainerEl!.querySelectorAll<SVGPathElement>('.o-star'));
-		const particleEls = Array.from(particlesG!.querySelectorAll<SVGCircleElement>('.particle'));
-		const svgDrawPaths = Array.from(logoSvgWrap!.querySelectorAll<SVGPathElement>('path[mask]'));
-
-		// Declare GSAP variables here so the cleanup function can access them
 		let tl: any;
-		let stripeSpin: any;
-		let orbitSpin: any;
-		let orbitCounterSpin: any;
+		let vortexSpin: any;
+		let liftTween: any;
 
-		// Dynamic import to prevent SSR crashes
 		(async () => {
 			const { gsap } = await import('$lib/gsap');
 
-			// ── initial states ────────────────────────────────────────────────────────
-			gsap.set(stripesG!, { autoAlpha: 0 });
-			gsap.set(wedgeEls, { scale: 0, svgOrigin: '500 500' });
-			gsap.set(orbitStarEls, { scale: 0, autoAlpha: 0, transformOrigin: '50% 50%' });
-			gsap.set(orbitContainerEl!, { autoAlpha: 0 });
-			gsap.set([haloEl!, halo2El!], { autoAlpha: 0 });
-			gsap.set(particleEls, { autoAlpha: 0 });
-			gsap.set(vigEl!, { autoAlpha: 0 });
-			gsap.set(irisEl!, { clipPath: 'circle(0px at 50% 50%)' });
-			gsap.set(logoSvgWrap!, { autoAlpha: 0 });
-			gsap.set(svgDrawPaths, { drawSVG: '0%' });
-			gsap.set(logoEl!, { autoAlpha: 0 });
-			gsap.set(starOverlayEl!, { autoAlpha: 0, scale: 0.1 });
-			gsap.set(starFillEl!, { autoAlpha: 0 });
-			gsap.set(starStrokeEl!, { drawSVG: '0%' });
+			const W = window.innerWidth,
+				H = window.innerHeight;
+			const openR = Math.min(W, H) * 0.36; // the "circle" the vortex opens into
+			const fullR = Math.ceil(Math.sqrt(W * W + H * H) / 2) + 40;
 
-			// ── continuous loops (killed on complete / cleanup) ───────────────────────
-			stripeSpin = gsap.to(stripesG!, {
+			const bladeEls = Array.from(vortexG!.querySelectorAll<SVGPathElement>('.blade'));
+
+			// ── initial states ────────────────────────────────────────────────────
+			gsap.set(bladeEls, { autoAlpha: 0, force3D: true });
+			gsap.set(vortexG!, {
+				force3D: true,
+				transformOrigin: '50% 50%',
+				transformPerspective: 1000
+			});
+			gsap.set(irisEl!, { clipPath: 'circle(0px at 50% 50%)' });
+			gsap.set(irisBgImgEl!, { autoAlpha: 0 });
+			gsap.set(logoEl!, { xPercent: -50, yPercent: -50, autoAlpha: 0, scale: 0.92, force3D: true });
+
+			// Slow hypnotic rotation — runs the whole time, so the wheel is never
+			// static and every phase blends into the next.
+			vortexSpin = gsap.to(vortexG!, {
 				rotation: 360,
 				svgOrigin: '500 500',
-				duration: 80,
+				duration: 55,
 				ease: 'none',
 				repeat: -1
 			});
 
-			orbitSpin = gsap.to(orbitContainerEl!, {
-				rotation: 360,
-				svgOrigin: '500 500',
-				duration: 14,
-				ease: 'none',
-				repeat: -1,
-				paused: true
-			});
-
-			// Counter-spin: each star rotates -360° at the same rate as the container
-			orbitCounterSpin = gsap.to(orbitStarEls, {
-				rotation: -360,
-				transformOrigin: '50% 50%',
-				duration: 14,
-				ease: 'none',
-				repeat: -1,
-				paused: true
-			});
-
-			// ── master timeline ───────────────────────────────────────────────────────
+			// ── master timeline — one continuous shot, every phase overlaps ───────
 			tl = gsap.timeline({
+				defaults: { ease: 'power2.inOut' },
 				onComplete: () => {
 					done = true;
-					stripeSpin?.kill();
-					orbitSpin?.kill();
-					orbitCounterSpin?.kill();
+					vortexSpin?.kill();
 				}
 			});
 
 			tl
-				// ── PHASE 1 — star ignites ──────────────────────────────────────────
-				.to(starOverlayEl!, { autoAlpha: 1, scale: 1, duration: 0.55, ease: 'back.out(2.2)' }, 0)
-				.to(starStrokeEl!, { drawSVG: '100%', duration: 1.4, ease: 'power2.inOut' }, 0.05)
-				.to(starFillEl!, { autoAlpha: 1, duration: 0.5, ease: 'power2.out' }, 1.1)
-				.fromTo(
-					haloEl!,
-					{ attr: { r: 10 }, autoAlpha: 0.75 },
-					{ attr: { r: 165 }, autoAlpha: 0, duration: 1.3, ease: 'power2.out' },
-					0.25
-				)
-				.fromTo(
-					halo2El!,
-					{ attr: { r: 10 }, autoAlpha: 0.45 },
-					{ attr: { r: 145 }, autoAlpha: 0, duration: 1.1, ease: 'power2.out' },
-					1.2
-				)
-				// ── PHASE 2 — stripes sweep out, orbit appears ──────────────────────
-				.to(stripesG!, { autoAlpha: 1, duration: 0.4 }, 1.5)
-				.fromTo(
-					wedgeEls,
-					{ scale: 0 },
-					{
-						scale: 1,
-						duration: 1.3,
-						ease: 'power3.out',
-						stagger: { each: 0.027 },
-						svgOrigin: '500 500'
-					},
-					1.6
-				)
-				.to(vigEl!, { autoAlpha: 1, duration: 0.9 }, 1.7)
-				.to(orbitContainerEl!, { autoAlpha: 1, duration: 0.1 }, 2.0)
+				// ── PHASE 1 — blades appear: two opposite blades at a time,
+				//              sweeping clockwise, quick ──────────────────────────
 				.to(
-					orbitStarEls,
+					bladeEls,
 					{
-						scale: 1,
 						autoAlpha: 1,
-						duration: 0.35,
-						ease: 'back.out(3)',
-						stagger: 0.09,
-						transformOrigin: '50% 50%'
+						duration: 0.45,
+						ease: 'power2.out',
+						// pair i with its opposite (i + HALF): both fade in together,
+						// pairs advance clockwise around the wheel
+						stagger: (i: number) => (i % HALF) * 0.055
 					},
-					2.0
+					0.15
 				)
+
+				// ── PHASE 2 — one long continuous dive into the middle ────────────
+				// A single 3.2s ease (no stop-and-go) — the "breathe" step is gone.
 				.call(
 					() => {
-						orbitSpin.play();
-						orbitCounterSpin.play();
+						gsap.to(vortexSpin, {
+							timeScale: 2.3,
+							duration: 0.7,
+							ease: 'power2.out'
+						});
 					},
 					[],
-					2.7
-				)
-				// ── PHASE 3 — iris opens, logo appears ─────────────────────────────
-				.addLabel('iris', 3.2)
-				.to(
-					irisEl!,
-					{ clipPath: `circle(${openR}px at 50% 50%)`, duration: 1.6, ease: 'power3.out' },
-					'iris'
-				)
-				.to(starOverlayEl!, { autoAlpha: 0, duration: 0.4, ease: 'power2.out' }, 'iris')
-				.to(logoSvgWrap!, { autoAlpha: 1, duration: 0.1 }, 'iris+=0.2')
-				.to(svgDrawPaths, { drawSVG: '100%', duration: 1.2, ease: 'power2.inOut' }, 'iris+=0.2')
-				.to(logoEl!, { autoAlpha: 1, duration: 0.6, ease: 'power2.out' }, 'iris+=1.2')
-				.to(logoSvgWrap!, { autoAlpha: 0, duration: 0.4 }, 'iris+=1.5')
-				// ── PHASE 4 — the punch ─────────────────────────────────────────────
-				.addLabel('punch', 4.8)
-				.to(
-					orbitContainerEl!,
-					{ scale: 5.5, autoAlpha: 0, svgOrigin: '500 500', duration: 1.0, ease: 'power3.in' },
-					'punch'
+					1.05
 				)
 				.to(
-					particleEls,
+					vortexG!,
 					{
-						attr: {
-							cx: (i: number) => 500 + Math.cos(particleList[i].angle) * 780,
-							cy: (i: number) => 500 + Math.sin(particleList[i].angle) * 780
-						},
-						autoAlpha: 0,
-						duration: 1.0,
-						ease: 'power2.out',
-						stagger: 0.04
+						scale: 8,
+						svgOrigin: '500 500',
+						duration: 2.7,
+						ease: 'power3.in'
 					},
-					'punch'
+					1.1
 				)
+				// after the dive settles, keep drifting deeper until covered —
+				// the stripes never freeze and never end before the iris eats them
+				.to(vortexG!, { scale: 10, svgOrigin: '500 500', duration: 2.6, ease: 'none' }, 3.3)
+
+				// ── PHASE 3 — the circle opens mid-dive (overlapping) ─────────────
 				.to(
 					irisEl!,
-					{ clipPath: `circle(${fullR}px at 50% 50%)`, duration: 1.4, ease: 'power3.in' },
-					'punch'
+					{ clipPath: `circle(${openR}px at 50% 50%)`, duration: 1.5, ease: 'power2.inOut' },
+					2.0
 				)
-				.to([stripesG!, vigEl!], { autoAlpha: 0, duration: 0.9 }, 'punch+=0.2')
-				// ── PHASE 5 — hand off to hero ───────────────────────────────────────
-				.addLabel('reveal', 'punch+=0.9')
+				// logo fades up on pure black while the circle is still growing
+				.to(logoEl!, { autoAlpha: 1, scale: 1, duration: 1.1, ease: 'power2.out' }, 2.35)
+
+				// ── PHASE 4 — circle blooms full-screen, BG_PW.jpg fades in ───────
+				// Starts before the logo tween ends → no visible "step".
+				.to(
+					irisEl!,
+					{ clipPath: `circle(${fullR}px at 50% 50%)`, duration: 1.6, ease: 'power2.inOut' },
+					3.3
+				)
+				.to(irisBgImgEl!, { autoAlpha: 1, duration: 1.4, ease: 'power2.inOut' }, 3.45)
+				.set(vortexG!, { autoAlpha: 0 }, 4.8) // fully covered by now
+
+				// ── PHASE 5 — logo glides to the top (overlaps the bloom tail) ────
+				.addLabel('lift', 4.1)
+				.call(
+					() => {
+						// Measure the real landing spot in the page beneath (pixel-perfect
+						// on any screen size / orientation).
+						const target = document.getElementById('page-logo');
+						let x = 0,
+							y = -(H * 0.36),
+							s = 0.72; // fallback if page not mounted yet
+						if (target && logoEl) {
+							const r = target.getBoundingClientRect();
+							x = r.left + r.width / 2 - W / 2;
+							y = r.top + r.height / 2 - H / 2;
+							s = r.width / logoEl.offsetWidth;
+						}
+						liftTween = gsap.to(logoEl!, {
+							x,
+							y,
+							scale: s,
+							duration: 0.85,
+							ease: 'power3.out'
+						});
+					},
+					[],
+					'lift'
+				)
+
+				// ── PHASE 6 — hand off to the page ────────────────────────────────
+				// BG_PW.jpg does NOT disappear: the site's fixed background
+				// (+page.svelte) is the exact same darkened + vignetted image, so
+				// this fade is a crossfade between identical pixels.
+				.addLabel('reveal', 'lift+=0.55')
 				.call(
 					() => {
 						introComplete.set(true);
@@ -276,16 +224,13 @@
 					[],
 					'reveal'
 				)
-				.to(root!, { autoAlpha: 0, duration: 0.6, ease: 'power2.inOut' }, 'reveal+=0.1');
-
-			tl.timeScale(0.95);
+				.to(root!, { autoAlpha: 0, duration: 0.55, ease: 'power1.out' }, 'reveal+=0.1');
 		})();
 
 		return () => {
 			tl?.kill();
-			stripeSpin?.kill();
-			orbitSpin?.kill();
-			orbitCounterSpin?.kill();
+			vortexSpin?.kill();
+			liftTween?.kill();
 			unlockScroll();
 		};
 	});
@@ -295,86 +240,35 @@
 	<div bind:this={root} class="intro">
 		<div class="base-bg"></div>
 
+		<!-- Vortex — pure vector swirl, beige blades on black -->
 		<svg
 			class="stage"
 			viewBox="0 0 1000 1000"
 			preserveAspectRatio="xMidYMid slice"
 			xmlns="http://www.w3.org/2000/svg"
+			shape-rendering="geometricPrecision"
 		>
-			<g bind:this={stripesG}>
-				{#each wedges as w}
-					<path
-						class="wedge"
-						d={w.d}
-						fill={w.red ? 'var(--color-lightred)' : 'var(--color-beige)'}
-					/>
-				{/each}
-			</g>
-
-			<circle
-				bind:this={haloEl}
-				cx="500"
-				cy="500"
-				r="10"
-				fill="none"
-				stroke="var(--color-lightaccent)"
-				stroke-width="1.5"
-			/>
-			<circle
-				bind:this={halo2El}
-				cx="500"
-				cy="500"
-				r="10"
-				fill="none"
-				stroke="var(--color-lightaccent)"
-				stroke-width="1"
-			/>
-
-			<g bind:this={orbitContainerEl}>
-				{#each orbitItems as item}
-					<path
-						class="o-star"
-						d={MINI_STAR}
-						transform={`translate(${item.x} ${item.y})`}
-						fill="var(--color-lightaccent)"
-					/>
-				{/each}
-			</g>
-
-			<g bind:this={particlesG}>
-				{#each particleList as p}
-					<circle class="particle" cx="500" cy="500" r={p.r} fill={p.fill} />
+			<g bind:this={vortexG}>
+				{#each blades as d}
+					<path class="blade" {d} />
 				{/each}
 			</g>
 		</svg>
 
-		<div bind:this={vigEl} class="vignette"></div>
-
+		<!-- Iris — the circle the vortex opens into -->
 		<div bind:this={irisEl} class="iris">
-			<div class="iris-bg"></div>
-			<div bind:this={logoSvgWrap} class="logo-svg-wrap" aria-hidden="true">
-				{@html logoSvgRaw}
+			<div class="iris-bg-black"></div>
+			<div bind:this={irisBgImgEl} class="iris-bg-img-wrap">
+				<div class="iris-bg-img" style={`background-image:url(${bg})`}></div>
+				<div class="iris-darken"></div>
+				<div class="iris-vignette"></div>
 			</div>
 			<img bind:this={logoEl} src={logo} alt="Produktworld" class="preloader-logo" />
-		</div>
-
-		<div bind:this={starOverlayEl} class="star-overlay">
-			<svg
-				class="cstar-svg"
-				viewBox="-100 -100 200 200"
-				xmlns="http://www.w3.org/2000/svg"
-				overflow="visible"
-			>
-				<path class="cstar-glow" d={CENTER_STAR} transform="scale(1.35)" />
-				<path bind:this={starFillEl} class="cstar-fill" d={CENTER_STAR} />
-				<path bind:this={starStrokeEl} class="cstar-stroke" d={CENTER_STAR} />
-			</svg>
 		</div>
 	</div>
 {/if}
 
 <style>
-	/* ── wrapper ── */
 	.intro {
 		position: fixed;
 		inset: 0;
@@ -386,101 +280,80 @@
 		inset: 0;
 		background: var(--color-darkaccent);
 	}
-
-	/* ── main SVG ── */
 	.stage {
+		transform: translateZ(0);
+		backface-visibility: hidden;
+		will-change: transform;
 		position: absolute;
 		inset: 0;
 		width: 100%;
 		height: 100%;
 	}
 
-	/* ── orbit mini-stars ── */
-	.o-star {
-		transform-box: fill-box;
-		transform-origin: center;
-		filter: drop-shadow(0 0 4px rgba(232, 154, 60, 0.9));
-	}
-
-	/* ── scatter particles ── */
-	.particle {
-		filter: drop-shadow(0 0 3px rgba(232, 154, 60, 0.7));
-	}
-
-	/* ── vignette ── */
-	.vignette {
-		position: absolute;
-		inset: 0;
-		z-index: 1;
-		pointer-events: none;
-		background: radial-gradient(circle at 50% 50%, transparent 20%, rgba(0, 0, 0, 0.9) 70%);
+	/*
+	  Smooth anti-aliased edges: a thin round-joined stroke in the same beige
+	  softens the vector edge, and geometricPrecision on the <svg> keeps the
+	  curves crisp while zooming.
+	*/
+	.blade {
+		fill: var(--color-beige);
+		stroke: var(--color-beige);
+		stroke-width: 1.4;
+		stroke-linejoin: round;
+		paint-order: stroke fill;
+		will-change: transform, opacity;
+		transform: translateZ(0);
+		backface-visibility: hidden;
 	}
 
 	/* ── iris ── */
 	.iris {
+		transform: translateZ(0);
+		backface-visibility: hidden;
 		position: absolute;
 		inset: 0;
 		z-index: 2;
+		will-change: clip-path;
 	}
-	.iris-bg {
+	/* Pure black backdrop — the logo reveals on plain black, no glow */
+	.iris-bg-black {
 		position: absolute;
 		inset: 0;
-		background: radial-gradient(circle at 50% 50%, #1e0606 0%, var(--color-darkaccent) 70%);
+		background: var(--color-darkaccent);
 	}
 
-	.logo-svg-wrap {
+	/*
+	  ⚠ These three layers must visually match the site background
+	  in +page.svelte (.site-bg) so the handoff crossfade is invisible.
+	*/
+	.iris-bg-img-wrap {
 		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: min(58vw, 480px);
-		z-index: 1;
+		inset: 0;
 	}
-	.logo-svg-wrap :global(svg) {
-		width: 100%;
-		height: auto;
-		display: block;
-		overflow: visible;
+	.iris-bg-img {
+		position: absolute;
+		inset: 0;
+		background-size: cover;
+		background-position: 50% 25%;
+		background-repeat: no-repeat;
+	}
+	.iris-darken {
+		position: absolute;
+		inset: 0;
+		background: rgba(13, 7, 6, 0.38);
+	}
+	.iris-vignette {
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(ellipse at 50% 42%, transparent 42%, rgba(0, 0, 0, 0.78) 100%);
 	}
 
 	.preloader-logo {
 		position: absolute;
 		top: 50%;
 		left: 50%;
-		transform: translate(-50%, -50%);
-		z-index: 2;
 		width: min(58vw, 480px);
-		will-change: opacity;
-	}
-
-	/* ── center star overlay ── */
-	.star-overlay {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		z-index: 4;
-		width: min(28vmin, 180px);
-		height: min(28vmin, 180px);
-		filter: drop-shadow(0 0 18px rgba(214, 38, 28, 0.65))
-			drop-shadow(0 0 42px rgba(232, 154, 60, 0.3));
-	}
-	.cstar-svg {
-		width: 100%;
-		height: 100%;
-		overflow: visible;
-	}
-	.cstar-glow {
-		fill: rgba(232, 154, 60, 0.12);
-		transform-origin: 0 0;
-	}
-	.cstar-fill {
-		fill: var(--color-lightred);
-	}
-	.cstar-stroke {
-		fill: none;
-		stroke: var(--color-lightaccent);
-		stroke-width: 4;
-		stroke-linejoin: round;
+		z-index: 2;
+		will-change: transform, opacity;
 	}
 </style>
