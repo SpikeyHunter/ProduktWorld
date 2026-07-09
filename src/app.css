@@ -1,56 +1,69 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /*
   ── Williesh — brand typeface ─────────────────────────────────────────────
 */
 @font-face {
-  font-family: "Williesh";
-  src:
-    url("/fonts/Williesh.woff2") format("woff2"),
-    url("/fonts/Williesh.woff") format("woff");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
+	font-family: 'Williesh';
+	src:
+		url('/fonts/Williesh.woff2') format('woff2'),
+		url('/fonts/Williesh.woff') format('woff');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
 }
 
 @theme {
-  /* Brand palette */
-  --color-beige:       #E4DDC6;
-  --color-darkred:     #5C140C;
-  --color-lightred:    #CE152C;
-  --color-darkaccent:  #0D0706;
-  --color-lightaccent: #E5A561;
+	/* Brand palette */
+	--color-beige: #e4ddc6;
+	--color-darkred: #5c140c;
+	--color-lightred: #ce152c;
+	--color-darkaccent: #0d0706;
+	--color-lightaccent: #e5a561;
 
-  /* FIX: Overriding standard Tailwind font variables ensures 
+	/* FIX: Overriding standard Tailwind font variables ensures 
     Williesh is applied globally across all elements.
   */
-  --font-sans:    "Williesh", system-ui, sans-serif;
-  --font-serif:   "Williesh", Georgia, serif;
-  --font-display: "Williesh", Georgia, serif;
-  --font-body:    "Williesh", system-ui, sans-serif;
+	--font-sans: 'Williesh', system-ui, sans-serif;
+	--font-serif: 'Williesh', Georgia, serif;
+	--font-display: 'Williesh', Georgia, serif;
+	--font-body: 'Williesh', system-ui, sans-serif;
 }
 
 :root {
-  --beige: var(--color-beige);
-  --darkred: var(--color-darkred);
-  --lightred: var(--color-lightred);
-  --darkaccent: var(--color-darkaccent);
-  --lightaccent: var(--color-lightaccent);
-  --neon-red: #FA0401;   
-  --neon-amber: #FBA901; 
+	--beige: var(--color-beige);
+	--darkred: var(--color-darkred);
+	--lightred: var(--color-lightred);
+	--darkaccent: var(--color-darkaccent);
+	--lightaccent: var(--color-lightaccent);
+	--neon-red: #fa0401;
+	--neon-amber: #fba901;
 }
 
-html, body {
-  background: var(--color-darkaccent);
-  color: var(--color-beige);
-  font-family: var(--font-sans); /* Applied explicitly to the body */
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
+html,
+body {
+	background: var(--color-darkaccent);
+	color: var(--color-beige);
+	font-family: var(--font-sans);
+	overflow-x: clip; /* was: hidden — hidden makes body a scroll container,
+                                which silently breaks lenis.scrollTo() */
+	-webkit-font-smoothing: antialiased;
 }
 
 /* Lenis smooth-scroll styles */
-html.lenis, html.lenis body { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto !important; }
-.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
-.lenis.lenis-stopped { overflow: clip; }
-.lenis.lenis-smooth iframe { pointer-events: none; }
+html.lenis,
+html.lenis body {
+	height: auto;
+}
+.lenis.lenis-smooth {
+	scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+	overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+	overflow: clip;
+}
+.lenis.lenis-smooth iframe {
+	pointer-events: none;
+}

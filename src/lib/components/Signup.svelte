@@ -92,17 +92,17 @@
 
 		<div class="w-full max-w-[400px] mt-2 relative min-h-[60px] flex justify-center items-center">
 			<button
-				class="group inline-flex items-center gap-2 rounded-full bg-lightred px-9 py-4
-					   text-beige uppercase tracking-[0.2em] text-sm transition-all duration-300 absolute z-20"
-				class:opacity-0={showForm}
-				class:pointer-events-none={showForm}
-				class:scale-105={!showForm && false}
-				onclick={() => (showForm = true)}
-			>
-				S’inscrire à la prévente <span class="transition-transform group-hover:translate-x-1"
-					>→</span
-				>
-			</button>
+	class="group inline-flex items-center gap-2 rounded-full bg-lightred px-9 py-4
+		   text-beige uppercase tracking-[0.2em] text-sm transition-all duration-300 absolute z-20 whitespace-nowrap"
+	class:opacity-0={showForm}
+	class:pointer-events-none={showForm}
+	class:scale-105={!showForm && false}
+	onclick={() => (showForm = true)}
+>
+	S’inscrire <span class="transition-transform group-hover:translate-x-1"
+		>→</span
+	>
+</button>
 
 			<div
 				class="w-full transition-all duration-500 z-10"
@@ -126,7 +126,7 @@
 
 <style>
 	.page-logo {
-		top: clamp(20px, 10svh, 56px);
+		top: clamp(10px, 10svh, 40px);
 		width: min(72vw, 440px);
 		z-index: 1;
 	}
