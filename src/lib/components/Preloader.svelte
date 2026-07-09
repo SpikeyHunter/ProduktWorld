@@ -105,11 +105,14 @@
 			const bladeEls = Array.from(vortexG!.querySelectorAll<SVGPathElement>('.blade'));
 
 			// ── initial states ────────────────────────────────────────────────────
-			gsap.set(bladeEls, { autoAlpha: 0, force3D: true });
+			// ⚠ No force3D / transformPerspective here. 3D transforms are not
+			// supported on SVG children (<g>, <path>) in Chrome or Firefox —
+			// only Safari renders them. Chrome/FF drop or mangle the matrix,
+			// which offset the vortex and made the blades vanish. GSAP's own
+			// docs note force3D has no effect on SVG. 2D transforms only.
+			gsap.set(bladeEls, { autoAlpha: 0 });
 			gsap.set(vortexG!, {
-				force3D: true,
-				transformOrigin: '50% 50%',
-				transformPerspective: 1000
+				transformOrigin: '50% 50%'
 			});
 			gsap.set(irisEl!, { clipPath: 'circle(0px at 50% 50%)' });
 			gsap.set(irisBgImgEl!, { autoAlpha: 0 });
@@ -326,10 +329,14 @@
 		stroke-linejoin: round;
 		paint-order: stroke fill;
 		will-change: transform, opacity;
-		transform: translateZ(0);
-		backface-visibility: hidden;
 
-		/* ⚠ Initial state in CSS, not gsap — see note at top of <style>. */
+		/* ⚠ No translateZ(0) / backface-visibility here — those are 3D
+		   properties, and 3D transforms on SVG children are Safari-only.
+		   Chrome and Firefox mishandle them (blades disappeared). The
+		   promotion hint we actually want lives on .stage (the <svg> root,
+		   which IS a normal HTML box and can be layer-promoted safely). */
+
+		/* Initial state in CSS, not gsap — see note at top of <style>. */
 		opacity: 0;
 		visibility: hidden;
 	}
