@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*!
  * ScrambleTextPlugin 3.15.0
  * https://gsap.com
@@ -19,6 +20,7 @@ class CharSet {
 			this.sets[i] = _scrambleText(80, this.chars); //we create 20 strings that are 80 characters long, randomly chosen and pack them into an array. We then randomly choose the scrambled text from this array in order to greatly improve efficiency compared to creating new randomized text from scratch each and every time it's needed. This is a simple lookup whereas the other technique requires looping through as many times as there are characters needed, and calling Math.random() each time through the loop, building the string, etc.
 		}
 	}
+	// @ts-ignore
 	grow(newLength) { //if we encounter a tween that has more than 80 characters, we'll need to add to the character sets accordingly. Once it's cached, it'll only need to grow again if we exceed that new length. Again, this is an efficiency tactic.
 		for (let i = 0; i < 20; i++) {
 			this.sets[i] += _scrambleText(newLength - this.length, this.chars);

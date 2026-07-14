@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*!
  * DrawSVGPlugin 3.15.0
  * https://gsap.com
@@ -9,13 +10,16 @@
 /* eslint-disable */
 
 
+// @ts-ignore
 let gsap, _toArray, _doc, _win, _isEdge, _coreInitted, _warned, _getStyleSaver, _reverting,
 	_windowExists = () => typeof(window) !== "undefined",
 	_getGSAP = () => gsap || (_windowExists() && (gsap = window.gsap) && gsap.registerPlugin && gsap),
 	_numExp = /[-+=\.]*\d+[\.e\-\+]*\d*[e\-\+]*\d*/gi, //finds any numbers, including ones that start with += or -=, negative numbers, and ones in scientific notation like 1e-8.
 	_types = {rect:["width","height"], circle:["r","r"], ellipse:["rx","ry"], line:["x2","y2"]},
+	// @ts-ignore
 	_round = value => Math.round(value * 10000) / 10000,
 	_parseNum = value => parseFloat(value) || 0,
+	// @ts-ignore
 	_parseSingleVal = (value, length) => {
 		let num = _parseNum(value);
 		return ~value.indexOf("%") ? num / 100 * length : num;

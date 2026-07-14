@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*!
  * SplitText 3.15.0
  * https://gsap.com

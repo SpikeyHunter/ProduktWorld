@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { introComplete } from '$lib/intro';
+	import { lenisStore } from '$lib/lenis';
 	import logo from '$lib/assets/PW_Logo.png';
 	import star from '$lib/assets/star.svg';
 
@@ -9,6 +10,26 @@
 	let logoEl = $state<HTMLImageElement>();
 	let content = $state<HTMLDivElement>();
 	let showForm = $state(false);
+
+	// Same S-curve used for the initial route-in scroll in +layout.svelte, so
+	// this button's scroll feels identical to the rest of the site.
+	const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+	function scrollToLineup() {
+		const target = document.getElementById('lineup');
+		if (!target) return;
+
+		let lenis: any;
+		const unsub = lenisStore.subscribe((v) => (lenis = v));
+		unsub();
+
+		if (lenis) {
+			lenis.start?.();
+			lenis.scrollTo(target, { duration: 1.6, easing: easeInOutCubic, force: true });
+		} else {
+			target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	}
 
 	onMount(() => {
 		let unsub = () => {};
@@ -125,6 +146,30 @@
 				></iframe>
 			</div>
 		</div>
+
+		<!-- ── scroll-to-lineup arrow ── -->
+		<button
+			type="button"
+			onclick={scrollToLineup}
+			aria-label="Voir la programmation"
+			class="scroll-cue mt-5 flex flex-col items-center gap-1.5 text-beige/60
+			       hover:text-lightaccent transition-colors"
+		>
+			<span class="text-[9px] tracking-[0.3em] uppercase">Line-up</span>
+			<svg
+				class="arrow-bounce"
+				width="18"
+				height="18"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="M12 4v16M5 13l7 7 7-7" />
+			</svg>
+		</button>
 	</div>
 </section>
 
@@ -133,5 +178,31 @@
 		top: clamp(10px, 10svh, 40px);
 		width: min(72vw, 440px);
 		z-index: 1;
+	}
+
+	.scroll-cue {
+		cursor: pointer;
+	}
+
+	.arrow-bounce {
+		animation: bounce-down 1.8s ease-in-out infinite;
+	}
+
+	@keyframes bounce-down {
+		0%,
+		100% {
+			transform: translateY(0);
+			opacity: 0.7;
+		}
+		50% {
+			transform: translateY(6px);
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.arrow-bounce {
+			animation: none;
+		}
 	}
 </style>
