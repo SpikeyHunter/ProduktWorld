@@ -7,6 +7,34 @@
 	let subtitleEl = $state<HTMLElement>(); 
 	let daysWrap = $state<HTMLElement>();
 
+	// ── ticket links ────────────────────────────────────────────────────────────
+	// If a day in $lib/data/lineup already carries a `ticketUrl`, that always
+	// wins — this map is only the fallback, so the links can move into the data
+	// file later without touching this component.
+	const TICKET_LINKS: { match: string[]; url: string }[] = [
+		{ match: ['trym'], url: 'https://link.produkt.ca/26-pw-tr' },
+		{ match: ['don diablo'], url: 'https://link.produkt.ca/26-pw-dd' },
+		{ match: ['max dean', 'luke dean'], url: 'https://link.produkt.ca/26-pw-mdld' }
+	];
+
+	// Positional fallback (day 1 / 2 / 3), in case a headliner ever gets renamed.
+	const TICKET_BY_INDEX = [
+		'https://link.produkt.ca/26-pw-tr',
+		'https://link.produkt.ca/26-pw-dd',
+		'https://link.produkt.ca/26-pw-mdld'
+	];
+
+	const norm = (s: unknown) => String(s ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+	function ticketUrl(day: any, i: number): string {
+		if (day?.ticketUrl) return day.ticketUrl;
+		const haystack = [...(day?.headliners ?? []), day?.support, ...(day?.locals ?? [])]
+			.map(norm)
+			.join(' | ');
+		const hit = TICKET_LINKS.find((t) => t.match.some((m) => haystack.includes(m)));
+		return hit?.url ?? TICKET_BY_INDEX[i] ?? '#';
+	}
+
 	onMount(() => {
 		let ctx: any;
 
@@ -16,15 +44,17 @@
 
 			ctx = gsap.context(() => {
 				const dayEls = Array.from(daysWrap!.querySelectorAll<HTMLElement>('.day'));
+				const innerEls = Array.from(daysWrap!.querySelectorAll<HTMLElement>('.day-inner'));
 				const dateEls = dayEls.map((d) => d.querySelector<HTMLElement>('.date')!);
 				const headEls = Array.from(daysWrap!.querySelectorAll<HTMLElement>('.head'));
 				const supportEls = Array.from(daysWrap!.querySelectorAll<HTMLElement>('.support-el'));
 				const localEls = Array.from(daysWrap!.querySelectorAll<HTMLElement>('.local-el'));
+				const ticketEls = Array.from(daysWrap!.querySelectorAll<HTMLElement>('.ticket-el'));
 				const vRules = Array.from(daysWrap!.querySelectorAll<HTMLElement>('.day-rule'));
 
 				// ── Reduced motion: show everything, no animation ──────────────────
 				if (reduced) {
-					gsap.set([dateEls, headEls, supportEls, localEls, subtitleEl!], {
+					gsap.set([dateEls, headEls, supportEls, localEls, ticketEls, subtitleEl!], {
 						autoAlpha: 1,
 						y: 0,
 						yPercent: 0
@@ -46,6 +76,7 @@
 				gsap.set(headEls, { yPercent: 112 }); 
 				gsap.set(supportEls, { autoAlpha: 0, y: 14 });
 				gsap.set(localEls, { autoAlpha: 0, y: 10 });
+				gsap.set(ticketEls, { autoAlpha: 0, y: 12 });
 				gsap.set(vRules, { scaleY: 0, transformOrigin: 'top center' });
 
 				// ── Entrance timeline — fires once when the section arrives ─────────
@@ -92,9 +123,16 @@
 						localEls,
 						{ autoAlpha: 1, y: 0, duration: 0.55, ease: 'power2.out', stagger: 0.06 },
 						'-=0.4'
-					);
+					)
+					// ticket CTAs land last — all three together, no stagger, so the
+					// row of buttons reads as one bar rather than three arrivals
+					.to(ticketEls, { autoAlpha: 1, y: 0, duration: 0.55, ease: 'power2.out' }, '-=0.3');
 
 				// ── Ambient parallax on scrub (desktop only) ───────────────────────
+				// ⚠ Applied to .day-inner, NOT .day. The buttons live outside the
+				// inner wrapper so they stay pinned to the bottom of the grid row —
+				// parallaxing the whole column would drift each button by a
+				// different amount and break the aligned row on every scroll.
 				if (window.innerWidth >= 768) {
 					const st = {
 						trigger: section,
@@ -102,7 +140,7 @@
 						end: 'bottom top',
 						scrub: 1
 					};
-					dayEls.forEach((d, i) => {
+					innerEls.forEach((d, i) => {
 						const depth = 4 + i * 2.5; 
 						gsap.fromTo(
 							d,
@@ -136,13 +174,16 @@
 		</p>
 
 		<!-- ── the bill: 3 columns on desktop, stacked on mobile ── -->
+		<!-- items-stretch → every .day fills the row height, so the mt-auto on the
+		     ticket row lands all three buttons on the same baseline even though
+		     day 3 carries an extra headliner line. -->
 		<div
 			bind:this={daysWrap}
-			class="mt-8 sm:mt-14 md:mt-20 grid grid-cols-1 md:grid-cols-3
+			class="mt-8 sm:mt-14 md:mt-20 grid grid-cols-1 md:grid-cols-3 items-stretch
 			       gap-y-8 sm:gap-y-10 md:gap-y-0 md:gap-x-12"
 		>
 			{#each LINEUP as day, i}
-				<div class="day relative flex flex-col items-center">
+				<div class="day relative h-full flex flex-col items-center">
 					<!-- vertical divider (desktop only), sits in the gutter -->
 					{#if i > 0}
 						<span
@@ -151,34 +192,58 @@
 						></span>
 					{/if}
 
-					<!-- date - Increased size, tight margin below -->
-					<p class="date text-lightred text-[22px] sm:text-[28px] uppercase font-bold">
-						{day.date}
-					</p>
+					<!-- everything that parallaxes lives in here -->
+					<div class="day-inner w-full flex flex-col items-center">
+						<!-- date - Increased size, tight margin below -->
+						<p class="date text-lightred text-[22px] sm:text-[28px] uppercase font-bold">
+							{day.date}
+						</p>
 
-					<!-- headliner(s) - Removed top margin entirely to tighten gap -->
-					<div class="flex flex-col items-center gap-0 mt-0">
-						{#each day.headliners as name}
-							<span class="mask block overflow-hidden">
-								<span
-									class="head block font-black text-beige uppercase leading-[0.95] [text-wrap:balance]"
-								>
-									{name}
+						<!-- headliner(s) - Removed top margin entirely to tighten gap -->
+						<div class="flex flex-col items-center gap-0 mt-0">
+							{#each day.headliners as name}
+								<span class="mask block overflow-hidden">
+									<span
+										class="head block font-black text-beige uppercase leading-[0.95] [text-wrap:balance]"
+									>
+										{name}
+									</span>
 								</span>
-							</span>
-						{/each}
+							{/each}
+						</div>
+
+						<!-- support — uppercase, red, minimum top margin -->
+						<p class="support-el mt-0.5 sm:mt-1 font-bold text-lightred leading-none uppercase">
+							{day.support}
+						</p>
+
+						<!-- locals — smaller, red, zero margin to sit flush under support -->
+						<div class="mt-0 flex flex-col gap-0 items-center">
+							{#each day.locals as name}
+								<p class="local-el font-semibold text-lightred/90 leading-none">{name}</p>
+							{/each}
+						</div>
 					</div>
 
-					<!-- support — uppercase, red, minimum top margin -->
-					<p class="support-el mt-0.5 sm:mt-1 font-bold text-lightred leading-none uppercase">
-						{day.support}
-					</p>
-
-					<!-- locals — smaller, red, zero margin to sit flush under support -->
-					<div class="mt-0 flex flex-col gap-0 items-center">
-						{#each day.locals as name}
-							<p class="local-el font-semibold text-lightred/90 leading-none">{name}</p>
-						{/each}
+					<!-- ticket CTA — pinned to the bottom of the cell so all three align.
+					     pt-* (not mt-*) guarantees the gap survives mt-auto, which
+					     collapses to 0 on mobile where each row is its own height. -->
+					<div class="mt-auto w-full flex justify-center pt-5 sm:pt-6">
+						<a
+							class="ticket-el cursor-pointer inline-flex items-center justify-center
+							       w-full max-w-[280px] sm:w-auto min-h-[48px]
+							       rounded-full border border-beige/45 px-6 sm:px-7 py-3
+							       text-[12px] sm:text-[14px] font-bold uppercase
+							       tracking-[0.12em] sm:tracking-[0.18em] whitespace-nowrap
+							       text-beige transition-colors duration-300
+							       hover:bg-beige hover:text-darkaccent hover:border-beige
+							       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-beige/70
+							       focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+							href={ticketUrl(day, i)}
+							aria-label={`Acheter des billets — ${day.headliners?.join(' / ') ?? day.date}`}
+						>
+							Acheter des billets
+						</a>
 					</div>
 				</div>
 			{/each}
@@ -232,6 +297,20 @@
 	.local-el {
 		font-size: clamp(1.2rem, 2.2vw, 1.5rem);
 		letter-spacing: -0.04em; /* -4% */
+	}
+
+	.day-inner {
+		will-change: transform;
+	}
+
+	/*
+	  ⚠ Deliberately NOT hidden in CSS the way the Preloader's layers are. This
+	  is a revenue link — if gsap ever fails to load, the button must still be
+	  there and clickable. gsap.set() hides it a frame later; a brief paint is a
+	  much cheaper failure than an invisible "buy tickets" CTA.
+	*/
+	.ticket-el {
+		will-change: transform, opacity;
 	}
 
 	.day-rule {

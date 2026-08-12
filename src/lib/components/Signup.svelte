@@ -9,6 +9,12 @@
 
 	let logoEl = $state<HTMLImageElement>();
 	let content = $state<HTMLDivElement>();
+
+	// ── Laylo signup ────────────────────────────────────────────────────────────
+	// The primary CTA now sends people to the line-up (where the per-day ticket
+	// links live), so nothing flips this to `true` anymore. Kept — along with the
+	// iframe below — so the mailing-list capture can be switched back on with a
+	// single onclick, without rebuilding the embed.
 	let showForm = $state(false);
 
 	// Same S-curve used for the initial route-in scroll in +layout.svelte, so
@@ -116,18 +122,22 @@
 		</p>
 
 		<div class="w-full max-w-[400px] mt-2 relative min-h-[60px] flex justify-center items-center">
+			<!-- ── primary CTA — scrolls to the line-up, where each day carries its
+			     own ticket link ── -->
 			<button
-	class="group inline-flex items-center gap-2 rounded-full bg-lightred px-9 py-4
-		   text-beige uppercase tracking-[0.2em] text-sm transition-all duration-300 absolute z-20 whitespace-nowrap"
-	class:opacity-0={showForm}
-	class:pointer-events-none={showForm}
-	class:scale-105={!showForm && false}
-	onclick={() => (showForm = true)}
->
-	S’inscrire <span class="transition-transform group-hover:translate-x-1"
-		>→</span
-	>
-</button>
+				type="button"
+				onclick={scrollToLineup}
+				class="group cursor-pointer inline-flex items-center gap-2 rounded-full bg-lightred px-9 py-4
+				       text-beige uppercase tracking-[0.2em] text-sm transition-all duration-300 absolute z-20 whitespace-nowrap
+				       hover:brightness-110
+				       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-beige/70
+				       focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+				class:opacity-0={showForm}
+				class:pointer-events-none={showForm}
+			>
+				Acheter des billets
+				<span class="transition-transform duration-300 group-hover:translate-y-1">↓</span>
+			</button>
 
 			<div
 				class="w-full transition-all duration-500 z-10"
